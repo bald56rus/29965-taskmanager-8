@@ -1,15 +1,20 @@
 import Task from './Task';
 import Filter from './Filter';
+import {getRandom, shuffleArray} from './Utils';
 
 const filterContainer = document.querySelector(`.filter.container`);
 const taskContainer = document.querySelector(`.board__tasks`);
-const TestTask = {
-  type: `repeat`,
-  color: `pink`,
-  deadline: null,
-  repeated: [],
-  message: `It is example of repeating task. It marks by wave.`,
-  hashtags: [`#repeat`, `#cinema`, `#entertaiment`]
+const titles = [`Изучить теорию`, `Сделать домашку`, `Пройти интенсив на соточку`];
+const tags = new Set([`homework`, `theory`, `practice`, `intensive`, `keks`, `bug`, `fix`]);
+const colors = [`black`, `yellow`, `blue`, `green`, `pink`];
+const repeatingDays = {
+  Mo: false,
+  Tu: false,
+  We: false,
+  Th: false,
+  Fr: false,
+  Sa: false,
+  Su: false
 };
 const filters = [
   {name: `all`, count: 15, disabled: false},
@@ -20,45 +25,66 @@ const filters = [
   {name: `tags`, count: 6, disabled: false},
   {name: `archive`, count: 115, disabled: false}
 ];
-const tasks = [];
+let tasks = [];
 
-const getRandomInt = (min, max) => {
-  return Math.floor(Math.random() * (max - min)) + min;
+const generateTask = () => {
+  const task = {};
+  task.color = shuffleArray(colors)[0];
+  task.title = shuffleArray(titles)[0];
+  const now = new Date();
+  const range = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+  task.dueDate = new Date(now.setDate(now.getDate() + shuffleArray(range)[0]));
+  task.repeatingDays = {};
+  Object.keys(repeatingDays).forEach((key, index) => {
+    task.repeatingDays[key] = index % 3 === 0 ? Math.random() >= 0.5 : false;
+  });
+  task.tags = new Set(shuffleArray([...tags]).slice(0, getRandom(1, 3)));
+  task.isFavorite = Boolean(Math.random >= 0.5);
+  task.isDone = Boolean(Math.random >= 0.5);
+  task.picture = `http://picsum.photos/100/100?r=${getRandom(1, 5000)}`;
+  return task;
 };
 
-const createFilter = (filter) => {
+const generateTasks = (count = 5) => {
+  const _tasks = [];
+  for (let i = 1; i <= getRandom(1, count); i++) {
+    _tasks.push(generateTask());
+  }
+  return _tasks;
+};
+
+const renderFilter = (filter) => {
   const element = new Filter(filter).render();
   element.addEventListener(`filter:change`, () => {
     taskContainer.innerHTML = ``;
-    tasks.length = 0;
-    const random = getRandomInt(1, filter.count);
-    for (let i = 0; i <= random; i++) {
-      tasks.push(TestTask);
-    }
-    renderTasks();
+    tasks = generateTasks(filter.count);
+    renderTasks(tasks);
   });
   return element;
 };
 
-const renderFilters = () => {
+const renderFilters = (filterList) => {
   filterContainer.innerHTML = ``;
   let container = new DocumentFragment();
-  filters.forEach((filter) => {
-    container.appendChild(createFilter(filter));
+  filterList.forEach((filter) => {
+    container.appendChild(renderFilter(filter));
   });
   filterContainer.appendChild(container);
 };
 
-const renderTasks = () => {
+const renderTasks = (taskList) => {
   taskContainer.innerHTML = ``;
   let container = new DocumentFragment();
-  tasks.forEach((task) => {
+  taskList.forEach((task) => {
     container.appendChild(new Task(task).render());
   });
   taskContainer.appendChild(container);
 };
-for (let i = 0; i < 3; i++) {
-  tasks.push(TestTask);
-}
-renderFilters();
-renderTasks();
+
+const init = () => {
+  renderFilters(filters);
+  tasks = generateTasks();
+  renderTasks(tasks);
+};
+
+init();
